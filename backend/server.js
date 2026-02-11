@@ -18,7 +18,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 const TEAM_ID = "iot_shield_2026";
-const MQTT_BROKER = "mqtt://broker.emqx.io";
+const MQTT_BROKER = "mqtt://157.173.101.159:1883";
 
 // Topics
 const TOPIC_STATUS = `rfid/${TEAM_ID}/card/status`;
