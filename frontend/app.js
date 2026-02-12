@@ -1,5 +1,4 @@
 const socket = io('http://localhost:5000');
-
 const statusDisplay = document.getElementById('status-display');
 const uidInput = document.getElementById('uid');
 const amountInput = document.getElementById('amount');
@@ -34,9 +33,19 @@ socket.on('card-status', async (data) => {
   uidInput.value = data.uid;
   topupBtn.disabled = false;
 
+  // Store current card info in localStorage
+  localStorage.setItem('currentCardUID', data.uid);
+
   // Check if we have a stored balance for this card
   const storedBalance = localStorage.getItem(`balance_${data.uid}`);
   const displayBalance = storedBalance ? parseFloat(storedBalance) : data.balance;
+
+  // Store card data with UID and balance together
+  localStorage.setItem(`card_${data.uid}`, JSON.stringify({
+    uid: data.uid,
+    balance: displayBalance,
+    lastScanned: new Date().toISOString()
+  }));
 
   // Update Visual Card
   cardVisual.classList.add('active');
@@ -64,6 +73,13 @@ socket.on('card-balance', (data) => {
 
   // Store the updated balance in localStorage
   localStorage.setItem(`balance_${data.uid}`, data.new_balance);
+
+  // Store complete card data with UID and updated balance together
+  localStorage.setItem(`card_${data.uid}`, JSON.stringify({
+    uid: data.uid,
+    balance: data.new_balance,
+    lastUpdated: new Date().toISOString()
+  }));
 
   // Update Visual Card if this card is still active
   if (data.uid === lastScannedUid) {
@@ -106,7 +122,21 @@ topupBtn.addEventListener('click', async () => {
     const result = await response.json();
     if (result.success) {
       addLog(`Top-up request sent for ${lastScannedUid}`);
+      // Store topup history in localStorage
+      const topupHistory = JSON.parse(localStorage.getItem('topupHistory') || '[]');
+      topupHistory.push({
+        uid: lastScannedUid,
+        amount: amount,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('topupHistory', JSON.stringify(topupHistory));
+      // Keep the amount in localStorage, clear only the input display
       amountInput.value = '';
+      // Restore the saved amount from localStorage
+      const savedAmount = localStorage.getItem('topupAmount');
+      if (savedAmount) {
+        amountInput.value = savedAmount;
+      }
     } else {
       addLog(`Error: ${result.error}`);
     }
