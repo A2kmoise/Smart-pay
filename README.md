@@ -33,7 +33,7 @@ Efficient bridging of RFID hardware with a web dashboard using MQTT and WebSocke
 1. Navigate to `/backend`.
 2. Install dependencies: `npm install`.
 3. Start the server: `node server.js`.
-4. The server runs on `http://localhost:3000`.
+4. The server runs on `http://localhost:5000`.
 
 ### Firmware
 1. Open `/firmware/iot_rfid_project/iot_rfid_project.ino` in Arduino IDE.
