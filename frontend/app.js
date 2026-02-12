@@ -1,4 +1,4 @@
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:5000');
 
 const statusDisplay = document.getElementById('status-display');
 const uidInput = document.getElementById('uid');
@@ -11,6 +11,19 @@ const cardBalanceDisplay = document.getElementById('card-balance-display');
 
 let lastScannedUid = null;
 
+// Load saved amount from localStorage immediately
+const savedAmount = localStorage.getItem('topupAmount');
+if (savedAmount) {
+  amountInput.value = savedAmount;
+}
+
+// Save amount to localStorage whenever it changes
+amountInput.addEventListener('input', (e) => {
+  if (e.target.value) {
+    localStorage.setItem('topupAmount', e.target.value);
+  }
+});
+
 socket.on('connect', () => {
   addLog('Connected to backend server');
 });
@@ -21,10 +34,14 @@ socket.on('card-status', async (data) => {
   uidInput.value = data.uid;
   topupBtn.disabled = false;
 
+  // Check if we have a stored balance for this card
+  const storedBalance = localStorage.getItem(`balance_${data.uid}`);
+  const displayBalance = storedBalance ? parseFloat(storedBalance) : data.balance;
+
   // Update Visual Card
   cardVisual.classList.add('active');
   cardUidDisplay.textContent = data.uid;
-  cardBalanceDisplay.textContent = `$${data.balance.toFixed(2)}`;
+  cardBalanceDisplay.textContent = `$${displayBalance.toFixed(2)}`;
 
   statusDisplay.innerHTML = `
         <div class="data-row">
@@ -33,7 +50,7 @@ socket.on('card-status', async (data) => {
         </div>
         <div class="data-row">
             <span class="data-label">Balance:</span>
-            <span class="data-value" style="color: #6366f1;">$${data.balance.toFixed(2)}</span>
+            <span class="data-value" style="color: #6366f1;">$${displayBalance.toFixed(2)}</span>
         </div>
         <div class="data-row">
             <span class="data-label">Status:</span>
@@ -44,6 +61,9 @@ socket.on('card-status', async (data) => {
 
 socket.on('card-balance', (data) => {
   addLog(`Balance updated for ${data.uid}: $${data.new_balance}`);
+
+  // Store the updated balance in localStorage
+  localStorage.setItem(`balance_${data.uid}`, data.new_balance);
 
   // Update Visual Card if this card is still active
   if (data.uid === lastScannedUid) {
@@ -72,7 +92,7 @@ topupBtn.addEventListener('click', async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/topup', {
+    const response = await fetch('http://localhost:5000/topup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
